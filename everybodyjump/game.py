@@ -2,6 +2,7 @@ from time import time
 
 import pyxel
 
+import communication
 import constants
 
 
@@ -35,11 +36,36 @@ class Game:
         pyxel.init(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)
         self.state = State()
 
+        # Communicate with server
+        self.client_id = ""
+        self.socket = communication.create_client_socket()
+        communication.send_command(self.socket, communication.COMMAND_CONNECT, {})
+
+
     def run(self) -> None:
         pyxel.run(self.update, self.draw)
 
+    def receive_from_server(self) -> None:
+        while True:
+            message, _address = communication.receive(self.socket)
+            if not message:
+                return
+            command, data = communication.parse_command(message)
+
+            # TODO handle different commands here
+            if command == communication.COMMAND_CONNECT:
+                client_id = data.get(communication.CLIENT_ID_KEY)
+                if not client_id:
+                    raise ValueError(f"Received invalid client ID from server: {client_id}")
+                self.client_id = client_id
+                print(f"INFO received client ID from server: {self.client_id}")
+
+
     def update(self) -> None:
         dt = self.state.update()
+
+        # Read server data
+        self.receive_from_server()
 
         # Move left-right
         if pyxel.btn(pyxel.KEY_LEFT):

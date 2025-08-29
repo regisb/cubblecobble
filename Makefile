@@ -3,10 +3,10 @@
 ##### Run
 
 play: ## Run game client
-	python -m everybodyjump.main
+	./everybodyjump/main.py
 
 serve: ## Run game server
-	python -m everybodyjump.main serve
+	./everybodyjump/main.py serve
 
 ##### Build/Package
 
@@ -26,6 +26,7 @@ test: test-ruff test-types test-format ## Run all tests
 test-types: ## Run mypy
 	mypy --ignore-missing-imports --implicit-reexport --strict ./everybodyjump/
 
+# TODO ruff is not catching incorrect arguments passed to function in other modules...
 test-ruff: ## Run static checks with ruff
 	ruff check ./everybodyjump
 

@@ -1,0 +1,17 @@
+# Screen
+SCREEN_WIDTH = 200
+SCREEN_HEIGHT = 200
+
+# Global properties
+GRAVITY = 9.81
+
+# Player properties
+PLAYER_SIZE = 10
+PLAYER_SPEED = 80
+PLAYER_WEIGHT = 5
+PLAYER_MAX_SPEED = 150
+PLAYER_JUMP_SPEED = 300
+
+# Colors
+BLACK = 0
+WHITE = 7

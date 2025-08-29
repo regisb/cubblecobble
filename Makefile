@@ -5,6 +5,17 @@
 run:
 	./game.py
 
+##### Build/Package
+
+package: ## Bundle game as pyxapp file
+	pyxel package . game
+
+html: package ## Bundle game as html file
+	pyxel app2html *.pyxapp
+
+executable: package ## Bundle game as executable file
+	pyxel app2exe *.pyxapp
+
 ##### Tests
 
 test: test-ruff test-types test-format ## Run all tests

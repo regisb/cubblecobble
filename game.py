@@ -4,6 +4,13 @@
 #   "pyxel",
 # ]
 # ///
+# title: Everybody Loves To Jump
+# author: Régis Behmo
+# desc: My Briançon Game Jam 2025 "multiplayer" entry
+# site: https://github.com/regisb/everybodylovestojump
+# license: AGPL v3.0
+# version: 1.0
+import sys
 from time import time
 
 import pyxel

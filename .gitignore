@@ -1,0 +1,3 @@
+*.pyxapp
+*.html
+build/

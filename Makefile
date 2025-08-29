@@ -1,14 +1,17 @@
-.DEFAULT_GOAL := run
+.DEFAULT_GOAL := play
 
 ##### Run
 
-run:
-	./game.py
+play: ## Run game client
+	python -m everybodyjump.main
+
+serve: ## Run game server
+	python -m everybodyjump.main serve
 
 ##### Build/Package
 
 package: ## Bundle game as pyxapp file
-	pyxel package . game
+	pyxel package ./everybodyjump everybodyjump/main.py
 
 html: package ## Bundle game as html file
 	pyxel app2html *.pyxapp
@@ -21,16 +24,16 @@ executable: package ## Bundle game as executable file
 test: test-ruff test-types test-format ## Run all tests
 
 test-types: ## Run mypy
-	mypy --ignore-missing-imports --implicit-reexport --strict ./game.py
+	mypy --ignore-missing-imports --implicit-reexport --strict ./everybodyjump/
 
 test-ruff: ## Run static checks with ruff
-	ruff check ./game.py
+	ruff check ./everybodyjump
 
 test-format: ## Run formatting checks
-	black --check ./game.py
+	black --check ./everybodyjump
 
 format: ## Format code
-	black ./game.py
+	black ./everybodyjump
 
 ESCAPE = ^[
 help: ## Print this help

@@ -4,10 +4,10 @@
 #   "pyxel",
 # ]
 # ///
-# title: Everybody Loves To Jump
+# title: Cubble Cobble
 # author: Régis Behmo
 # desc: My Briançon Game Jam 2025 "multiplayer" entry
-# site: https://github.com/regisb/everybodylovestojump
+# site: https://github.com/regisb/cubblecobble
 # license: AGPL v3.0
 # version: 1.0
 import sys

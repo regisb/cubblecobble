@@ -3,15 +3,15 @@
 ##### Run
 
 play: ## Run game client
-	./everybodyjump/main.py
+	./cubblecobble/main.py
 
 serve: ## Run game server
-	./everybodyjump/main.py serve
+	./cubblecobble/main.py serve
 
 ##### Build/Package
 
 package: ## Bundle game as pyxapp file
-	pyxel package ./everybodyjump everybodyjump/main.py
+	pyxel package ./cubblecobble cubblecobble/main.py
 
 html: package ## Bundle game as html file
 	pyxel app2html *.pyxapp
@@ -24,17 +24,17 @@ executable: package ## Bundle game as executable file
 test: test-ruff test-types test-format ## Run all tests
 
 test-types: ## Run mypy
-	mypy --ignore-missing-imports --implicit-reexport --strict ./everybodyjump/
+	mypy --ignore-missing-imports --implicit-reexport --strict ./cubblecobble/
 
 # TODO ruff is not catching incorrect arguments passed to function in other modules...
 test-ruff: ## Run static checks with ruff
-	ruff check ./everybodyjump
+	ruff check ./cubblecobble
 
 test-format: ## Run formatting checks
-	black --check ./everybodyjump
+	black --check ./cubblecobble
 
 format: ## Format code
-	black ./everybodyjump
+	black ./cubblecobble
 
 ESCAPE = ^[
 help: ## Print this help

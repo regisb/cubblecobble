@@ -52,11 +52,11 @@ class State:
     TILE_WALL = (1, 0)
     TILE_PLAYER = (0, 1)
     LEVELS_TILEMAP = 0
+    PLAYER_SIZE: int = constants.PLAYER_SIZE
 
     def __init__(self) -> None:
-        self.size: int = constants.PLAYER_SIZE
-        self.x: int = constants.LEVEL_SIZE_PIXELS // 2 - self.size
-        self.y: int = constants.LEVEL_SIZE_PIXELS // 2 - self.size
+        self.x: int = constants.LEVEL_SIZE_PIXELS // 2 - self.PLAYER_SIZE
+        self.y: int = constants.LEVEL_SIZE_PIXELS // 2 - self.PLAYER_SIZE
         self.vx: int = 0
         self.vy: int = 0
 
@@ -67,11 +67,11 @@ class State:
 
     @property
     def x2(self) -> int:
-        return self.x + self.size - 1
+        return self.x + self.PLAYER_SIZE - 1
 
     @property
     def y2(self) -> int:
-        return self.y + self.size - 1
+        return self.y + self.PLAYER_SIZE - 1
 
     def receive_from_server(self) -> None:
         while True:
@@ -196,12 +196,35 @@ class State:
         )
 
         # Player
-        draw_player(self.x, self.y)
+        self.draw_player()
+
+    def draw_player(self) -> None:
+        u, v = self.TILE_PLAYER
+        u *= constants.TILE_SIZE
+        v *= constants.TILE_SIZE
+        pyxel.blt(self.x, self.y, 0, u, v, self.PLAYER_SIZE, self.PLAYER_SIZE)
+
         # Manage overlap
-        if self.x >= constants.LEVEL_SIZE_PIXELS - self.size:
-            draw_player(self.x - constants.LEVEL_SIZE_PIXELS, self.y)
-        if self.y >= constants.LEVEL_SIZE_PIXELS - self.size:
-            draw_player(self.x, self.y - constants.LEVEL_SIZE_PIXELS)
+        if self.x >= constants.LEVEL_SIZE_PIXELS - self.PLAYER_SIZE:
+            pyxel.blt(
+                self.x - constants.LEVEL_SIZE_PIXELS,
+                self.y,
+                0,
+                u,
+                v,
+                self.PLAYER_SIZE,
+                self.PLAYER_SIZE,
+            )
+        if self.y >= constants.LEVEL_SIZE_PIXELS - self.PLAYER_SIZE:
+            pyxel.blt(
+                self.x,
+                self.y - constants.LEVEL_SIZE_PIXELS,
+                0,
+                u,
+                v,
+                self.PLAYER_SIZE,
+                self.PLAYER_SIZE,
+            )
 
     def is_wall(self, x: int, y: int) -> bool:
         """
@@ -213,17 +236,6 @@ class State:
         # pylint: disable=no-member
         tile_id = pyxel.tilemaps[self.LEVELS_TILEMAP].pget(x_tile, y_tile)
         return tile_id == self.TILE_WALL
-
-
-def draw_player(x: int, y: int) -> None:
-    # TODO IMPORTANT draw image instead
-    pyxel.rect(
-        x,
-        y,
-        constants.PLAYER_SIZE,
-        constants.PLAYER_SIZE,
-        constants.WHITE,
-    )
 
 
 def truncate(value: int, bound_min: int, bound_max: int) -> int:

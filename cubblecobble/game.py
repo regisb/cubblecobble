@@ -18,18 +18,10 @@ def run() -> None:
 
 class State:
     def __init__(self) -> None:
-        self.time = time()
-        self.x: float = constants.LEVEL_SIZE_PIXELS // 2 - constants.PLAYER_SIZE
-        self.y: float = constants.LEVEL_SIZE_PIXELS // 2 - constants.PLAYER_SIZE
-        self.vx: float = 0
-        self.vy: float = 0
-
-    def update(self) -> float:
-        now = time()
-        dt = now - self.time
-        # TODO move this to a different method?
-        self.time = now
-        return dt
+        self.x: int = constants.LEVEL_SIZE_PIXELS // 2 - constants.PLAYER_SIZE
+        self.y: int = constants.LEVEL_SIZE_PIXELS // 2 - constants.PLAYER_SIZE
+        self.vx: int = 0
+        self.vy: int = 0
 
 
 class Game:
@@ -85,10 +77,6 @@ class Game:
         communication.send_command(self.socket, command, data)
 
     def update(self) -> None:
-        # TODO IMPORTANT stop bothering about time. Instead, count everything in frames,
-        # because pyxel maintains a constant framerate.
-        dt = self.state.update()
-
         # Send a ping, just to check back-and-forth delay
         # if self.client_id:
         #     self.send_to_server(
@@ -122,9 +110,10 @@ class Game:
         )
 
         # Move
-        self.state.x += self.state.vx * dt
+        # (the ... * 1 part is to represent the fact that we count a dt=1 for each frame)
+        self.state.x += self.state.vx * 1
         self.state.x %= constants.LEVEL_SIZE_PIXELS
-        self.state.y += self.state.vy * dt
+        self.state.y += self.state.vy * 1
         self.state.y %= constants.LEVEL_SIZE_PIXELS
 
     def draw(self) -> None:
@@ -151,7 +140,7 @@ class Game:
     #     return pyxel.tilemaps[self.LEVELS_TILEMAP].pget(x, y) == self.TILE_WALL
 
 
-def draw_player(x: float, y: float) -> None:
+def draw_player(x: int, y: int) -> None:
     pyxel.rect(
         x,
         y,
@@ -161,7 +150,7 @@ def draw_player(x: float, y: float) -> None:
     )
 
 
-def truncate(value: float, bound_min: float, bound_max: float) -> float:
+def truncate(value: int, bound_min: int, bound_max: int) -> int:
     if value < bound_min:
         return bound_min
     if value > bound_max:

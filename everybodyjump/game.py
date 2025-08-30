@@ -39,7 +39,7 @@ class Game:
 
         # Communicate with server
         self.client_id = ""
-        self.socket = communication.create_client_socket("127.0.0.1", 5260)
+        self.socket = communication.create_client_socket()
         self.send_to_server(communication.COMMAND_CONNECT, {})
 
     def run(self) -> None:

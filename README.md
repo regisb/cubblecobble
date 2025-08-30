@@ -20,6 +20,10 @@ Bundle to executable file:
 
 Note that the generated file will be executable only on the architecture on which it was built.
 
+To point to a specific game server, run:
+
+    GAME_SERVER_HOST=<your IP address> GAME_SERVER_PORT=<server port> make play
+
 ## License
 
 This work is licensed under the terms of the [GNU Affero General Public License (AGPL)](./LICENSE.txt).

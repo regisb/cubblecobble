@@ -86,22 +86,31 @@ class Game:
         # Read server data
         self.receive_from_server()
 
+        # Collect forces
+        fx = 0
+        fy = 0
+
         # Move left-right
         if pyxel.btn(pyxel.KEY_LEFT):
-            self.state.vx = -constants.PLAYER_SPEED
+            fx -= constants.PLAYER_SPEED
         elif pyxel.btn(pyxel.KEY_RIGHT):
-            self.state.vx = constants.PLAYER_SPEED
+            fx -= constants.PLAYER_SPEED
         else:
-            self.state.vx = 0
+            # When no input, apply braking force
+            fx = -self.state.vx
 
         # Fall
-        self.state.vy += constants.GRAVITY * constants.PLAYER_WEIGHT
+        fy += constants.GRAVITY * constants.PLAYER_WEIGHT
 
         # Jump
         if pyxel.btnp(pyxel.KEY_SPACE):
-            self.state.vy -= constants.PLAYER_JUMP_SPEED
+            fy -= constants.PLAYER_JUMP_SPEED
 
-        # Limit speed
+        # Compute speeds
+        self.state.vx += fx * 1
+        self.state.vy += fy * 1
+
+        # Limit fall speed
         self.state.vy = min(self.state.vy, constants.PLAYER_MAX_FALL_SPEED)
 
         # Move

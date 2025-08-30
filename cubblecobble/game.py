@@ -16,39 +16,62 @@ def run() -> None:
     game.run()
 
 
-class State:
-    def __init__(self) -> None:
-        self.x: int = constants.LEVEL_SIZE_PIXELS // 2 - constants.PLAYER_SIZE
-        self.y: int = constants.LEVEL_SIZE_PIXELS // 2 - constants.PLAYER_SIZE
-        self.vx: int = 0
-        self.vy: int = 0
-
-
 class Game:
-    TILE_EMPTY = (0, 0)
-    TILE_WALL = (1, 0)
-    TILE_PLAYER = (0, 1)
-    LEVELS_TILEMAP = 0
-
     def __init__(self) -> None:
         pyxel.init(
             constants.LEVEL_SIZE_PIXELS,
             constants.LEVEL_SIZE_PIXELS,
             title="Cubble Cobble - Briançon Code Club Game Jam Zero 2025",
             fps=constants.FPS,
+            # Note that the scaling factor is fucked up https://github.com/kitao/pyxel/issues/591
         )
-        self.state = State()
 
         # Load assets
         pyxel.load(os.path.join(os.path.dirname(__file__), "assets.pyxres"))
+
+        # Initialize state
+        self.state = State()
+
+    def run(self) -> None:
+        pyxel.run(self.update, self.draw)
+
+    def update(self) -> None:
+        # Handle restart command here
+        if pyxel.btnp(pyxel.KEY_R):
+            # Restart
+            self.state = State()
+
+        self.state.update()
+
+    def draw(self) -> None:
+        self.state.draw()
+
+
+class State:
+    TILE_EMPTY = (0, 0)
+    TILE_WALL = (1, 0)
+    TILE_PLAYER = (0, 1)
+    LEVELS_TILEMAP = 0
+
+    def __init__(self) -> None:
+        self.size: int = constants.PLAYER_SIZE
+        self.x: int = constants.LEVEL_SIZE_PIXELS // 2 - self.size
+        self.y: int = constants.LEVEL_SIZE_PIXELS // 2 - self.size
+        self.vx: int = 0
+        self.vy: int = 0
 
         # Communicate with server
         self.client_id = ""
         self.socket = communication.create_client_socket()
         self.send_to_server(communication.COMMAND_CONNECT, {})
 
-    def run(self) -> None:
-        pyxel.run(self.update, self.draw)
+    @property
+    def x2(self) -> int:
+        return self.x + self.size - 1
+
+    @property
+    def y2(self) -> int:
+        return self.y + self.size - 1
 
     def receive_from_server(self) -> None:
         while True:
@@ -86,7 +109,7 @@ class Game:
         # Read server data
         self.receive_from_server()
 
-        # Collect forces
+        ############# Collect forces
         fx = 0
         fy = 0
 
@@ -94,10 +117,10 @@ class Game:
         if pyxel.btn(pyxel.KEY_LEFT):
             fx -= constants.PLAYER_SPEED
         elif pyxel.btn(pyxel.KEY_RIGHT):
-            fx -= constants.PLAYER_SPEED
+            fx += constants.PLAYER_SPEED
         else:
             # When no input, apply braking force
-            fx = -self.state.vx
+            fx = -self.vx
 
         # Fall
         fy += constants.GRAVITY * constants.PLAYER_WEIGHT
@@ -106,21 +129,59 @@ class Game:
         if pyxel.btnp(pyxel.KEY_SPACE):
             fy -= constants.PLAYER_JUMP_SPEED
 
-        # Compute speeds
-        self.state.vx += fx * 1
-        self.state.vy += fy * 1
+        ############# Compute speeds
+        self.vx += fx * 1
+        self.vy += fy * 1
 
-        # Limit fall speed
-        self.state.vy = min(self.state.vy, constants.PLAYER_MAX_FALL_SPEED)
+        # Limit speed
+        self.vy = min(self.vy, constants.PLAYER_MAX_FALL_SPEED)
+        self.vx = truncate(self.vx, -constants.PLAYER_SPEED, constants.PLAYER_SPEED)
 
-        # Move
+        ############# Handle collisions
+        # Ground
+        if self.vy > 0:
+            if self.is_wall(self.x, self.y2 + 1) or self.is_wall(self.x2, self.y2 + 1):
+                self.vy = 0
+        # Ceiling
+        if self.vy < 0:
+            if self.is_wall(self.x, self.y - 1) or self.is_wall(self.x2, self.y - 1):
+                self.vy = 0
+        # Walls
+        if self.vx < 0:
+            if self.is_wall(self.x - 1, self.y) or self.is_wall(self.x - 1, self.y2):
+                self.vx = 0
+        if self.vx > 0:
+            if self.is_wall(self.x2 + 1, self.y) or self.is_wall(self.x2 + 1, self.y2):
+                self.vx = 0
+
+        ############# Move
         # (the ... * 1 part is to represent the fact that we count a dt=1 for each frame)
-        self.state.x += self.state.vx * 1
-        self.state.y += self.state.vy * 1
+        self.x += self.vx * 1
+        self.y += self.vy * 1
+
+        # Get out of walls
+        # top wall
+        if (self.is_wall(self.x, self.y) and self.is_wall(self.x, self.y - 1)) or (
+            self.is_wall(self.x2, self.y)
+            and self.is_wall(
+                self.x2,
+                self.y - 1,
+            )
+        ):
+            self.y = ((self.y // constants.TILE_SIZE) + 1) * constants.TILE_SIZE
+        # bottom wall
+        if (self.is_wall(self.x, self.y2) and self.is_wall(self.x, self.y2 + 1)) or (
+            self.is_wall(self.x2, self.y)
+            and self.is_wall(
+                self.x2,
+                self.y2 + 1,
+            )
+        ):
+            self.y = ((self.y // constants.TILE_SIZE) - 1) * constants.TILE_SIZE
 
         # Portal
-        self.state.x %= constants.LEVEL_SIZE_PIXELS
-        self.state.y %= constants.LEVEL_SIZE_PIXELS
+        self.x %= constants.LEVEL_SIZE_PIXELS
+        self.y %= constants.LEVEL_SIZE_PIXELS
 
     def draw(self) -> None:
         # Level
@@ -135,18 +196,27 @@ class Game:
         )
 
         # Player
-        draw_player(self.state.x, self.state.y)
+        draw_player(self.x, self.y)
         # Manage overlap
-        if self.state.x >= constants.LEVEL_SIZE_PIXELS - constants.PLAYER_SIZE:
-            draw_player(self.state.x - constants.LEVEL_SIZE_PIXELS, self.state.y)
-        if self.state.y >= constants.LEVEL_SIZE_PIXELS - constants.PLAYER_SIZE:
-            draw_player(self.state.x, self.state.y - constants.LEVEL_SIZE_PIXELS)
+        if self.x >= constants.LEVEL_SIZE_PIXELS - self.size:
+            draw_player(self.x - constants.LEVEL_SIZE_PIXELS, self.y)
+        if self.y >= constants.LEVEL_SIZE_PIXELS - self.size:
+            draw_player(self.x, self.y - constants.LEVEL_SIZE_PIXELS)
 
-    # def is_wall(self, x: int, y: int) -> bool:
-    #     return pyxel.tilemaps[self.LEVELS_TILEMAP].pget(x, y) == self.TILE_WALL
+    def is_wall(self, x: int, y: int) -> bool:
+        """
+        Note that we don't need to bother about trimming arguments to the level size,
+        this function performs the modulo operation itself.
+        """
+        x_tile = (x % constants.LEVEL_SIZE_PIXELS) // constants.TILE_SIZE
+        y_tile = (y % constants.LEVEL_SIZE_PIXELS) // constants.TILE_SIZE
+        # pylint: disable=no-member
+        tile_id = pyxel.tilemaps[self.LEVELS_TILEMAP].pget(x_tile, y_tile)
+        return tile_id == self.TILE_WALL
 
 
 def draw_player(x: int, y: int) -> None:
+    # TODO IMPORTANT draw image instead
     pyxel.rect(
         x,
         y,

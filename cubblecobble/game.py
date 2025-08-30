@@ -1,3 +1,4 @@
+import os
 from time import time
 import typing as t
 
@@ -18,8 +19,8 @@ def run() -> None:
 class State:
     def __init__(self) -> None:
         self.time = time()
-        self.x: float = constants.SCREEN_WIDTH // 2 - constants.PLAYER_SIZE
-        self.y: float = constants.SCREEN_HEIGHT // 2 - constants.PLAYER_SIZE
+        self.x: float = constants.LEVEL_SIZE_PIXELS // 2 - constants.PLAYER_SIZE
+        self.y: float = constants.LEVEL_SIZE_PIXELS // 2 - constants.PLAYER_SIZE
         self.vx: float = 0
         self.vy: float = 0
 
@@ -32,10 +33,22 @@ class State:
 
 
 class Game:
+    TILE_EMPTY = (0, 0)
+    TILE_WALL = (1, 0)
+    TILE_PLAYER = (0, 1)
+    LEVELS_TILEMAP = 0
 
     def __init__(self) -> None:
-        pyxel.init(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)
+        pyxel.init(
+            constants.LEVEL_SIZE_PIXELS,
+            constants.LEVEL_SIZE_PIXELS,
+            title="Cubble Cobble - Briançon Code Club Game Jam Zero 2025",
+            fps=30,
+        )
         self.state = State()
+
+        # Load assets
+        pyxel.load(os.path.join(os.path.dirname(__file__), "assets.pyxres"))
 
         # Communicate with server
         self.client_id = ""
@@ -72,13 +85,15 @@ class Game:
         communication.send_command(self.socket, command, data)
 
     def update(self) -> None:
+        # TODO IMPORTANT stop bothering about time. Instead, count everything in frames,
+        # because pyxel maintains a constant framerate.
         dt = self.state.update()
 
         # Send a ping, just to check back-and-forth delay
-        if self.client_id:
-            self.send_to_server(
-                communication.COMMAND_PING, {communication.TIME_KEY: time()}
-            )
+        # if self.client_id:
+        #     self.send_to_server(
+        #         communication.COMMAND_PING, {communication.TIME_KEY: time()}
+        #     )
 
         # Read server data
         self.receive_from_server()
@@ -108,18 +123,32 @@ class Game:
 
         # Move
         self.state.x += self.state.vx * dt
-        self.state.x %= constants.SCREEN_WIDTH
+        self.state.x %= constants.LEVEL_SIZE_PIXELS
         self.state.y += self.state.vy * dt
-        self.state.y %= constants.SCREEN_HEIGHT
+        self.state.y %= constants.LEVEL_SIZE_PIXELS
 
     def draw(self) -> None:
-        pyxel.cls(constants.BLACK)
+        # Level
+        pyxel.bltm(
+            0,
+            0,
+            self.LEVELS_TILEMAP,
+            0,
+            0,
+            constants.LEVEL_SIZE_PIXELS,
+            constants.LEVEL_SIZE_PIXELS,
+        )
+
+        # Player
         draw_player(self.state.x, self.state.y)
         # Manage overlap
-        if self.state.x >= constants.SCREEN_WIDTH - constants.PLAYER_SIZE:
-            draw_player(self.state.x - constants.SCREEN_WIDTH, self.state.y)
-        if self.state.y >= constants.SCREEN_HEIGHT - constants.PLAYER_SIZE:
-            draw_player(self.state.x, self.state.y - constants.SCREEN_HEIGHT)
+        if self.state.x >= constants.LEVEL_SIZE_PIXELS - constants.PLAYER_SIZE:
+            draw_player(self.state.x - constants.LEVEL_SIZE_PIXELS, self.state.y)
+        if self.state.y >= constants.LEVEL_SIZE_PIXELS - constants.PLAYER_SIZE:
+            draw_player(self.state.x, self.state.y - constants.LEVEL_SIZE_PIXELS)
+
+    # def is_wall(self, x: int, y: int) -> bool:
+    #     return pyxel.tilemaps[self.LEVELS_TILEMAP].pget(x, y) == self.TILE_WALL
 
 
 def draw_player(x: float, y: float) -> None:

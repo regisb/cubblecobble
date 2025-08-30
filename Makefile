@@ -1,5 +1,10 @@
 .DEFAULT_GOAL := play
 
+##### Edit
+
+assets: ## Edit assets
+	pyxel edit ./cubblecobble/assets.pyxres
+
 ##### Run
 
 play: ## Run game client

@@ -32,6 +32,7 @@ class Game:
 
         # Initialize state
         self.state = State()
+        self.frame = 0
 
         # Establish connection with server
         # Communicate with server
@@ -48,40 +49,54 @@ class Game:
             # Restart
             self.state = State()
 
-        # Send a ping, just to check back-and-forth delay
-        # if self.client_id:
-        #     self.send_to_server(
-        #         communication.COMMAND_PING, {communication.TIME_KEY: time()}
-        #     )
-
         # Read server data
         self.receive_from_server()
 
+        # Send a ping once per second to check round-trip time (RTT)
+        if self.frame % constants.FPS == 0:
+            self.send_to_server(
+                communication.COMMAND_PING, {communication.TIME_KEY: time()}
+            )
+
+        if not self.client_id:
+            # Don't do anything until we have received a successful connect from the server
+            return
+
         self.state.update()
+        self.frame += 1
 
     def draw(self) -> None:
         self.state.draw()
 
     def receive_from_server(self) -> None:
-        while True:
-            message, _address = communication.receive(self.socket)
-            if not message:
-                return
+        for message, _address in communication.receive_all(self.socket):
             command, data = communication.parse_command(message)
 
             # TODO handle different commands here
             if command == communication.COMMAND_CONNECT:
-                client_id = data.get(communication.CLIENT_ID_KEY)
-                if not client_id:
-                    raise ValueError(
-                        f"Received invalid client ID from server: {client_id}"
-                    )
-                self.client_id = client_id
-                print(f"INFO received client ID from server: {self.client_id}")
+                self.on_connect(data)
             elif command == communication.COMMAND_PING:
-                start_time = data[communication.TIME_KEY]
-                dt = time() - start_time
-                print(f"INFO back and forth ping delay: {dt*1000} ms ({1/dt} FPS)")
+                self.on_ping(data)
+
+    def on_connect(self, data: dict[str, t.Any]) -> None:
+        client_id = data.get(communication.CLIENT_ID_KEY)
+        if not client_id:
+            raise ValueError(f"Received invalid client ID from server: {client_id}")
+        self.client_id = client_id
+        print(f"INFO received client ID from server: {self.client_id}")
+
+    def on_ping(self, data: dict[str, t.Any]) -> None:
+        rtt = time() - data[communication.TIME_KEY]
+        rtt_frames = rtt/constants.FRAME_DURATION
+        if rtt_frames > 10:
+            print(f"WARNING RTT: {rtt*1000} ms ({rtt_frames} frames)")
+        server_frame = data[communication.FRAME_KEY]
+        if server_frame > self.frame:
+            adjusted_frame = server_frame + int(constants.FPS * rtt/2) + 1
+            print(f"INFO Adjusting client frame from {self.frame} to {adjusted_frame})")
+            # TODO the drift is way too big!
+            self.frame = adjusted_frame
+
 
     def send_to_server(self, command: str, data: dict[str, t.Any]) -> None:
         if self.client_id:

@@ -1,8 +1,9 @@
 FPS = 30
+FRAME_DURATION = 1 / FPS
 
 # Level
-TILE_SIZE: int = 8# each tile is 8x8 pixels in pyxel
-LEVEL_SIZE_TILES = 16 # TODO don't hardcode this
+TILE_SIZE: int = 8  # each tile is 8x8 pixels in pyxel
+LEVEL_SIZE_TILES = 16  # TODO don't hardcode this
 LEVEL_SIZE_PIXELS = LEVEL_SIZE_TILES * TILE_SIZE
 
 # Global properties

@@ -11,6 +11,7 @@ COMMAND_PING = "ping"
 CLIENT_ID_KEY = "client_id"
 TIME_KEY = "time"
 DATA_KEY = "data"
+FRAME_KEY = "frame"
 
 
 def create_server_socket(host: str, port: int) -> socket.socket:
@@ -47,28 +48,31 @@ def _create_blocking_udp_socket() -> socket.socket:
     return s
 
 
-def receive(s: socket.socket) -> tuple[dict[str, t.Any] | None, t.Any]:
+def receive_all(s: socket.socket) -> t.Iterator[tuple[dict[str, t.Any], t.Any]]:
     """
+    Iterate on received messages.
     Attempt to read JSON-formatted data. In case no data is available, return None, None.
     """
-    try:
-        encoded, address = s.recvfrom(BUFFER_SIZE)
-    except BlockingIOError:
-        return None, None
-    try:
-        decoded = encoded.decode()
-    except UnicodeDecodeError:
-        print(f"WARNING cannot decode data of length {len(encoded)}")
-        return None, address
-    try:
-        parsed = json.loads(decoded)
-    except json.JSONDecodeError:
-        print(f"WARNING cannot parse JSON from data of length {len(decoded)}")
-        return None, address
-    if not isinstance(parsed, dict):
-        print(f"WARNING parsed data is not valid dict {parsed}")
-        return None, address
-    return parsed, address
+    while True:
+        try:
+            encoded, address = s.recvfrom(BUFFER_SIZE)
+        except BlockingIOError:
+            # No more messages
+            return
+        try:
+            decoded = encoded.decode()
+        except UnicodeDecodeError:
+            print(f"WARNING cannot decode data of length {len(encoded)}")
+            continue
+        try:
+            parsed = json.loads(decoded)
+        except json.JSONDecodeError:
+            print(f"WARNING cannot parse JSON from data of length {len(decoded)}")
+            continue
+        if not isinstance(parsed, dict):
+            print(f"WARNING parsed data is not valid dict {parsed}")
+            continue
+        yield parsed, address
 
 
 def send_command(

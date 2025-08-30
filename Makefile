@@ -21,14 +21,13 @@ executable: package ## Bundle game as executable file
 
 ##### Tests
 
-test: test-ruff test-types test-format ## Run all tests
+test: test-lint test-types test-format ## Run all tests
 
 test-types: ## Run mypy
 	mypy --ignore-missing-imports --implicit-reexport --strict ./cubblecobble/
 
-# TODO ruff is not catching incorrect arguments passed to function in other modules...
-test-ruff: ## Run static checks with ruff
-	ruff check ./cubblecobble
+test-lint: ## Run static linter checks
+	pylint ./cubblecobble
 
 test-format: ## Run formatting checks
 	black --check ./cubblecobble

@@ -10,7 +10,7 @@ Install requirements:
 
 Install development requirements:
 
-    pip install mypy ruff
+    pip install mypy pylint black
 
 Bundle to executable file:
 

@@ -1,5 +1,4 @@
 import socket
-from time import time
 import typing as t
 import uuid
 
@@ -47,7 +46,7 @@ class Server:
             client_id = data.get(communication.CLIENT_ID_KEY, "")
 
         if client_id not in self.clients:
-            print(f"WARNING invalid client ID: '{client_id}'")
+            print(f"WARNING invalid client ID: '{client_id}' for command: '{command}'")
             return
 
         # Update client address
@@ -55,7 +54,7 @@ class Server:
 
         # Parse command
         if command == communication.COMMAND_PING:
-            self.ping(client_id)
+            self.ping(client_id, data)
 
     def send(self, client_id: str, command: str, data: dict[str, t.Any]) -> None:
         """
@@ -81,14 +80,11 @@ class Server:
         )
         return client_id
 
-    def ping(self, client_id: str) -> None:
+    def ping(self, client_id: str, data: dict[str, t.Any]) -> None:
         """
-        Respond with just the time, for now.
+        Respond with the same data.
         """
-        # TODO certainly, we want to return more than the time, right?
-        self.send(
-            client_id, communication.COMMAND_PING, {communication.TIME_KEY: time()}
-        )
+        self.send(client_id, communication.COMMAND_PING, data)
 
 
 class Client:

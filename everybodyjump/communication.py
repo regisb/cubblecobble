@@ -19,12 +19,12 @@ def create_server_socket(host: str, port: int) -> socket.socket:
     return s
 
 
-def create_client_socket() -> socket.socket:
+def create_client_socket(host: str="127.0.0.1", port: int=5260) -> socket.socket:
     """
     Create non-blocking client socket
     """
     s = _create_blocking_udp_socket()
-    s.connect(("127.0.0.1", 5260))  # TODO don't hardcode it, but auto-detect on LAN
+    s.connect((host, port))  # TODO auto-detect server on LAN
     return s
 
 

@@ -35,7 +35,7 @@ class Game:
             constants.LEVEL_SIZE_PIXELS,
             constants.LEVEL_SIZE_PIXELS,
             title="Cubble Cobble - Briançon Code Club Game Jam Zero 2025",
-            fps=30,
+            fps=constants.FPS,
         )
         self.state = State()
 
@@ -99,21 +99,18 @@ class Game:
 
         # Jump
         if pyxel.btnp(pyxel.KEY_SPACE):
-            self.state.vy = -constants.PLAYER_JUMP_SPEED
+            self.state.vy -= constants.PLAYER_JUMP_SPEED
 
         # Limit speed
-        self.state.vx = truncate(
-            self.state.vx, -constants.PLAYER_MAX_SPEED, constants.PLAYER_MAX_SPEED
-        )
-        self.state.vy = truncate(
-            self.state.vy, -constants.PLAYER_MAX_SPEED, constants.PLAYER_MAX_SPEED
-        )
+        self.state.vy = min(self.state.vy, constants.PLAYER_MAX_FALL_SPEED)
 
         # Move
         # (the ... * 1 part is to represent the fact that we count a dt=1 for each frame)
         self.state.x += self.state.vx * 1
-        self.state.x %= constants.LEVEL_SIZE_PIXELS
         self.state.y += self.state.vy * 1
+
+        # Portal
+        self.state.x %= constants.LEVEL_SIZE_PIXELS
         self.state.y %= constants.LEVEL_SIZE_PIXELS
 
     def draw(self) -> None:

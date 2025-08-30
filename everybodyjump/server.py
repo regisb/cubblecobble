@@ -1,4 +1,5 @@
 import socket
+import time
 import typing as t
 import uuid
 
@@ -31,6 +32,7 @@ class Server:
             message, address = communication.receive(self.socket)
             if message is None:
                 # no data
+                time.sleep(0.001)
                 continue
             self.process(message, address)
 

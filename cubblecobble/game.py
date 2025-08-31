@@ -113,7 +113,6 @@ class Game:
         for message, _address in communication.receive_all(self.socket):
             command, data = communication.parse_command(message)
 
-            # TODO handle different commands here
             if command == communication.COMMAND_CONNECT:
                 self.on_connect(data)
             elif command == communication.COMMAND_PING:

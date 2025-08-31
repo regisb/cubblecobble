@@ -10,6 +10,8 @@ from state import State
 
 
 def run() -> None:
+    # Initialize pyxel just once
+    initialize_pyxel("Cubble Cobble - Server")
     while True:
         # Always restart server in case of crash
         server = Server()
@@ -47,7 +49,6 @@ class Server:
         """
         # Note that we initialize pyxel, because we need to load tilemaps. But we don't
         # pyxel.run(...) because that would pause the server window too frequently.
-        initialize_pyxel("Cubble Cobble - Server")
         while True:
             self.update()
 

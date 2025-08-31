@@ -80,7 +80,10 @@ class Position:
         fy += constants.GRAVITY * constants.PLAYER_WEIGHT
 
         # Jump
-        if Commands.JUMP in inputs:
+        is_on_ground = False
+        if self.is_wall(self.x, self.y2 + 1) or self.is_wall(self.x2, self.y2 + 1):
+            is_on_ground = True
+        if Commands.JUMP in inputs and is_on_ground:
             fy -= constants.PLAYER_JUMP_SPEED
 
         ############# Compute speeds

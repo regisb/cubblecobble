@@ -103,9 +103,9 @@ class Game:
             pyxel.cls(constants.BLACK)
             host, port = self.socket.getpeername()
             pyxel.text(
-                constants.LEVEL_SIZE_PIXELS // 2,
-                constants.LEVEL_SIZE_PIXELS // 2,
-                f"Waiting to connect to {host}:{port}...",
+                20,
+                constants.LEVEL_SIZE_PIXELS // 2 - 10,
+                f"Connecting to\n{host}:{port}...",
                 constants.WHITE,
             )
 

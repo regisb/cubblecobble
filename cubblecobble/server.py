@@ -206,6 +206,9 @@ class Server:
             print(
                 f"WARNING invalid format for inputs: expected list got {inputs.__class__}"
             )
+        if len(inputs) > 3:
+            print(f"WARNING Too much inputs from {client_id}: {len(inputs)}")
+            inputs = inputs[:3]
         # TODO don't insert inputs twice
         # TODO check inputs are valid
         bisect.insort(self.client_inputs[client_id], (client_frame, client_id, inputs))

@@ -262,14 +262,35 @@ class State:
         raise ValueError(f"Client not found: {client_id}. Did you call add_client?")
 
     def update(self) -> None:
-        # TODO REMOVE me
-        # non_zero_inputs = []
-        # for inputs in self.inputs:
-        #     if inputs:
-        #         non_zero_inputs.append(inputs)
-        # if len(non_zero_inputs) > 1:
-        #     import ipdb; ipdb.set_trace()
+        # Apply some speed to handle player collisions
+        bump_speed = 20
+        for i, pos1 in enumerate(self.positions):
+            for pos2 in self.positions[i + 1 :]:
+                # Top
+                if (pos2.x <= pos1.x < pos2.x2 and pos2.y <= pos1.y < pos2.y2) or (
+                    pos2.x <= pos1.x2 - 1 < pos2.x2 and pos2.y <= pos1.y < pos2.y2
+                ):
+                    pos1.vy += bump_speed
+                    pos2.vy -= bump_speed
+                # Bottom
+                if (pos2.x <= pos1.x2 < pos2.x2 and pos2.y <= pos1.y2 < pos2.y2) or (
+                    pos2.x <= pos1.x2 - 1 < pos2.x2 and pos2.y <= pos1.y2 < pos2.y2
+                ):
+                    pos1.vy -= bump_speed
+                    pos2.vy += bump_speed
+                # Side
+                if (pos2.y <= pos1.y < pos2.y2 and pos2.x <= pos1.x < pos2.x2) or (
+                    pos2.y <= pos1.y2 - 1 < pos2.y2 and pos2.x <= pos1.x < pos2.x2
+                ):
+                    pos1.vx += bump_speed
+                    pos2.vx -= bump_speed
+                if (pos2.y <= pos1.y2 < pos2.y2 and pos2.x <= pos1.x2 < pos2.x2) or (
+                    pos2.y <= pos1.y2 - 1 < pos2.y2 and pos2.x <= pos1.x2 < pos2.x2
+                ):
+                    pos1.vx -= bump_speed
+                    pos2.vx += bump_speed
 
+        # Manage each player individually
         for position, inputs in zip(self.positions, self.inputs):
             position.update(inputs)
         # Clear inputs

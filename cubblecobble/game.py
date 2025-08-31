@@ -6,7 +6,7 @@ import pyxel
 
 import communication
 import constants
-from state import State
+from state import Commands, State
 
 
 def run() -> None:
@@ -30,15 +30,19 @@ class Game:
         # Load assets
         pyxel.load(os.path.join(os.path.dirname(__file__), "assets.pyxres"))
 
-        # Initialize state
-        self.state = State()
+        # Initialize states
+        self.states = [State()]
         self.frame = 0
+
+        # Store inputs
+        # Each entry is a (frame, inputs) tuple.
+        self.inputs: list[tuple[int, list[int]]] = []
 
         # Establish connection with server
         # Communicate with server
         self.client_id = ""
         self.socket = communication.create_client_socket()
-        self.send_to_server(communication.COMMAND_CONNECT, {})
+        self.send_command(communication.COMMAND_CONNECT, {})
 
     def run(self) -> None:
         pyxel.run(self.update, self.draw)
@@ -46,27 +50,54 @@ class Game:
     def update(self) -> None:
         # Handle restart command here
         # TODO remove me? Only server can decide to restart.
-        if pyxel.btnp(pyxel.KEY_R):
-            # Restart
-            self.state = State()
-
-        # Read server data
-        self.receive_from_server()
+        # Also, we could use pyxel.reset() to actually reset.
+        # if pyxel.btnp(pyxel.KEY_R):
+        #     # Restart
+        #     self.state = State()
 
         # Send a ping once per second to check round-trip time (RTT)
         if self.frame % constants.FPS == 0:
-            self.send_to_server(
+            self.send_command(
                 communication.COMMAND_PING, {communication.TIME_KEY: time()}
             )
 
-        if not self.client_id:
-            # Don't do anything until we have received a successful connect from the server
-            return
+        # Don't do anything until we have received a successful connect from the server
+        if self.client_id:
+            ############# Collect keys pressed as inputs
+            inputs = []
+            if pyxel.btn(pyxel.KEY_LEFT):
+                inputs.append(Commands.LEFT)
+            if pyxel.btn(pyxel.KEY_RIGHT):
+                inputs.append(Commands.RIGHT)
+            if pyxel.btnp(pyxel.KEY_SPACE):  # Note that we don't support multiple jumps
+                inputs.append(Commands.JUMP)
+            self.inputs.append((self.frame, inputs))
 
-        self.state.update()
+            # Share data with server as soon as possible.
+            self.send_command(
+                communication.COMMAND_STATE,
+                {
+                    communication.CLIENT_ID_KEY: self.client_id,
+                    communication.FRAME_KEY: self.frame,
+                    communication.INPUTS_KEY: inputs,
+                },
+            )
+
+            # Apply all actions
+            self.states[0].update(inputs)
+
+        # We do this after the update, such that server has as much time as possible to
+        # respond, but before drawing, such that what we display is as accurate as
+        # possible.
+        self.receive_from_server()
+
+        # Move on to next frame
+        self.frame += 1
 
     def draw(self) -> None:
-        self.state.draw()
+        self.states[0].draw_level()
+        for state in self.states:
+            state.draw_player()
 
     def receive_from_server(self) -> None:
         for message, _address in communication.receive_all(self.socket):
@@ -77,6 +108,10 @@ class Game:
                 self.on_connect(data)
             elif command == communication.COMMAND_PING:
                 self.on_ping(data)
+            elif command == communication.COMMAND_STATE:
+                self.on_state(data)
+            else:
+                print(f"WARNING unknow command from server: '{command}'")
 
     def on_connect(self, data: dict[str, t.Any]) -> None:
         client_id = data.get(communication.CLIENT_ID_KEY)
@@ -98,10 +133,45 @@ class Game:
             print(f"INFO Adjusting client frame from {self.frame} to {adjusted_frame})")
             self.frame = adjusted_frame
         elif server_frame < self.frame - constants.FPS:
-            print(f"WARNING more than 1s delay between client and server frame: {self.frame - server_frame} frames")
-            # TODO we should probably do something in that case, if it presents itself
+            print(
+                f"WARNING more than 1s delay between client and server frame: {self.frame - server_frame} frames"
+            )
+            # TODO IMPORTANT we must do something in that case. It happens because the server/client frame rates are slightly different.
 
-    def send_to_server(self, command: str, data: dict[str, t.Any]) -> None:
+    def on_state(self, data: dict[str, t.Any]) -> None:
+        server_frame = data[communication.FRAME_KEY]
+        if server_frame >= self.frame:
+            print("WARNING Server is ahead. Did we pause the game?")
+            # TODO IMPORTANT we should be doing something about it...
+
+        # Load current player state
+        # We assume that state[0] is ours.
+        self.states = [
+            State().from_json(state)
+            for state in data[communication.STATES_KEY]
+        ]
+
+        # Clear inputs that came before the server frame
+        while self.inputs and self.inputs[0][0] < server_frame:
+            self.inputs.pop(0)
+
+        # Re-apply all inputs
+        for frame in range(server_frame+1, self.frame+1):
+            inputs = []
+            for past_frame, past_inputs in self.inputs:
+                # TODO there is a more efficient way to read this list
+                if past_frame == frame:
+                    inputs = past_inputs
+                if past_frame > frame:
+                    break
+            self.states[0].update(inputs)
+            for state in self.states[1:]:
+                state.update()
+
+    def send_command(self, command: str, data: dict[str, t.Any]) -> None:
+        """
+        Send command to server.
+        """
         if self.client_id:
             data[communication.CLIENT_ID_KEY] = self.client_id
         communication.send_command(self.socket, command, data)

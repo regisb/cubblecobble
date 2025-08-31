@@ -1,6 +1,33 @@
+import os
 import pyxel
 
 import constants
+
+
+def initialize(
+    title: str = "Cubble Cobble - Briançon Code Club Game Jam Zero 2025",
+) -> None:
+    """
+    Initialize pyxel state.
+
+    We do need pyxel on the server because we need to load tilemaps.
+    """
+    pyxel.init(
+        constants.LEVEL_SIZE_PIXELS,
+        constants.LEVEL_SIZE_PIXELS,
+        title=title,
+        fps=constants.FPS,
+        # Note that the scaling factor is fucked up https://github.com/kitao/pyxel/issues/591
+    )
+
+    # Load assets
+    pyxel.load(os.path.join(os.path.dirname(__file__), "assets.pyxres"))
+
+
+class Commands:
+    LEFT = 0
+    RIGHT = 1
+    JUMP = 2
 
 
 class State:
@@ -16,6 +43,24 @@ class State:
         self.vx: int = 0
         self.vy: int = 0
 
+    def as_json(self) -> dict[str, int]:
+        """
+        TODO is a dict really the best representation? Why not a list?
+        """
+        return {
+            "x": self.x,
+            "y": self.y,
+            "vx": self.vx,
+            "vy": self.vy,
+        }
+
+    def from_json(self, data: dict[str, int]) -> "State":
+        self.x = data["x"]
+        self.y = data["y"]
+        self.vx = data["vx"]
+        self.vy = data["vy"]
+        return self
+
     @property
     def x2(self) -> int:
         return self.x + self.PLAYER_SIZE - 1
@@ -24,15 +69,15 @@ class State:
     def y2(self) -> int:
         return self.y + self.PLAYER_SIZE - 1
 
-    def update(self) -> None:
+    def update(self, inputs: list[int]) -> None:
         ############# Collect forces
         fx = 0
         fy = 0
 
         # Move left-right
-        if pyxel.btn(pyxel.KEY_LEFT):
+        if Commands.LEFT in inputs:
             fx -= constants.PLAYER_SPEED
-        elif pyxel.btn(pyxel.KEY_RIGHT):
+        elif Commands.RIGHT in inputs:
             fx += constants.PLAYER_SPEED
         else:
             # When no input, apply braking force
@@ -42,7 +87,7 @@ class State:
         fy += constants.GRAVITY * constants.PLAYER_WEIGHT
 
         # Jump
-        if pyxel.btnp(pyxel.KEY_SPACE):
+        if Commands.JUMP in inputs:
             fy -= constants.PLAYER_JUMP_SPEED
 
         ############# Compute speeds
@@ -99,8 +144,7 @@ class State:
         self.x %= constants.LEVEL_SIZE_PIXELS
         self.y %= constants.LEVEL_SIZE_PIXELS
 
-    def draw(self) -> None:
-        # Level
+    def draw_level(self) -> None:
         pyxel.bltm(
             0,
             0,
@@ -110,9 +154,6 @@ class State:
             constants.LEVEL_SIZE_PIXELS,
             constants.LEVEL_SIZE_PIXELS,
         )
-
-        # Player
-        self.draw_player()
 
     def draw_player(self) -> None:
         u, v = self.TILE_PLAYER

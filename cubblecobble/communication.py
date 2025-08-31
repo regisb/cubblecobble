@@ -8,10 +8,14 @@ BUFFER_SIZE = 1024
 COMMAND_KEY = "command"
 COMMAND_CONNECT = "connect"
 COMMAND_PING = "ping"
+COMMAND_STATE = "state"
 CLIENT_ID_KEY = "client_id"
 TIME_KEY = "time"
 DATA_KEY = "data"
 FRAME_KEY = "frame"
+INPUTS_KEY = "inputs"
+STATE_KEY = "state"
+STATES_KEY = "states"
 
 
 def create_server_socket(host: str, port: int) -> socket.socket:

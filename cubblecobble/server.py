@@ -19,6 +19,7 @@ def run() -> None:
             return
         except Exception as e:  # pylint: disable=broad-exception-caught
             print(f"ERROR {e}")
+            server.socket.close()
 
 
 class Server:
@@ -73,9 +74,9 @@ class Server:
             self.client_states[client_id].update(client_inputs)
 
         # Share state with all clients
-        for client_id in self.client_addresses:
-            states = [self.client_states[client_id].as_json()]
-            states = [
+        for client_id, client_state in self.client_states.items():
+            states = [client_state.as_json()]
+            states += [
                 other_client_state.as_json()
                 for other_client_id, other_client_state in self.client_states.items()
                 if other_client_id != client_id

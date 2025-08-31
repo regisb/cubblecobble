@@ -31,7 +31,7 @@ class Game:
         pyxel.load(os.path.join(os.path.dirname(__file__), "assets.pyxres"))
 
         # Initialize states
-        self.states = [State()]
+        self.states: list[State] = [State()]
         self.frame = 0
 
         # Store inputs
@@ -150,6 +150,9 @@ class Game:
             State().from_json(state)
             for state in data[communication.STATES_KEY]
         ]
+        if not self.states:
+            # TODO IMPORTANT the fact that this can happen tell us that we didn't pick the right data structure.
+            import ipdb; ipdb.set_trace()
 
         # Clear inputs that came before the server frame
         while self.inputs and self.inputs[0][0] < server_frame:
@@ -166,7 +169,8 @@ class Game:
                     break
             self.states[0].update(inputs)
             for state in self.states[1:]:
-                state.update()
+                # Note: we assume that users did not make any input
+                state.update([])
 
     def send_command(self, command: str, data: dict[str, t.Any]) -> None:
         """

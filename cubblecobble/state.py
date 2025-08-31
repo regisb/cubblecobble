@@ -95,7 +95,9 @@ class State:
         self.vy += fy * 1
 
         # Limit speed
-        self.vy = truncate(self.vy, -constants.PLAYER_JUMP_SPEED, constants.PLAYER_MAX_FALL_SPEED)
+        self.vy = truncate(
+            self.vy, -constants.PLAYER_JUMP_SPEED, constants.PLAYER_MAX_FALL_SPEED
+        )
         self.vx = truncate(self.vx, -constants.PLAYER_SPEED, constants.PLAYER_SPEED)
 
         ############# Handle collisions

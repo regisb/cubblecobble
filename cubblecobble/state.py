@@ -139,6 +139,15 @@ class State:
             )
         ):
             self.y = ((self.y // constants.TILE_SIZE) - 1) * constants.TILE_SIZE
+        # side walls
+        if (self.is_wall(self.x, self.y) and self.is_wall(self.x - 1, self.y)) or (
+            self.is_wall(self.x, self.y2) and self.is_wall(self.x - 1, self.y2)
+        ):
+            self.x = ((self.x // constants.TILE_SIZE) + 1) * constants.TILE_SIZE
+        if (self.is_wall(self.x2, self.y) and self.is_wall(self.x2 - 1, self.y)) or (
+            self.is_wall(self.x2, self.y2) and self.is_wall(self.x2 - 1, self.y2)
+        ):
+            self.x = ((self.x // constants.TILE_SIZE) - 1) * constants.TILE_SIZE
 
         # Portal
         self.x %= constants.LEVEL_SIZE_PIXELS

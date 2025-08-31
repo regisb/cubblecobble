@@ -17,12 +17,14 @@ serve: ## Run game server
 
 package: ## Bundle game as pyxapp file
 	pyxel package ./cubblecobble cubblecobble/main.py
+	mkdir -p build/
+	mv cubblecobble.pyxapp build/
 
 html: package ## Bundle game as html file
-	pyxel app2html *.pyxapp
+	pyxel app2html build/cubblecobble.pyxapp
 
 executable: package ## Bundle game as executable file
-	pyxel app2exe *.pyxapp
+	pyxel app2exe build/cubblecobble.pyxapp
 
 ##### Tests
 

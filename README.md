@@ -6,7 +6,7 @@
     cd cubblecobble
     python -m venv ./.venv
     source .venv/bin/activate
-    pip install pyxel
+    pip install --upgrade pyxel
     make play
 
 ## Development

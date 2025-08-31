@@ -37,6 +37,7 @@ def create_client_socket(
         host = os.environ.get("GAME_SERVER_HOST", "127.0.0.1")
     if port is None:
         port = int(os.environ.get("GAME_SERVER_PORT", "5260"))
+    print(f"INFO Connecting to {host}:{port}")
     s.connect((host, port))
     return s
 

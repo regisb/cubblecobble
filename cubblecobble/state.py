@@ -162,33 +162,7 @@ class Position:
         tile_id = pyxel.tilemaps[LEVELS_TILEMAP].pget(x_tile, y_tile)
         return tile_id == TILE_WALL
 
-    def draw(self) -> None:
-        u, v = TILE_PLAYER
-        u *= constants.TILE_SIZE
-        v *= constants.TILE_SIZE
-        pyxel.blt(self.x, self.y, 0, u, v, PLAYER_SIZE, PLAYER_SIZE)
-
-        # Manage overlap
-        if self.x >= constants.LEVEL_SIZE_PIXELS - PLAYER_SIZE:
-            pyxel.blt(
-                self.x - constants.LEVEL_SIZE_PIXELS,
-                self.y,
-                0,
-                u,
-                v,
-                PLAYER_SIZE,
-                PLAYER_SIZE,
-            )
-        if self.y >= constants.LEVEL_SIZE_PIXELS - PLAYER_SIZE:
-            pyxel.blt(
-                self.x,
-                self.y - constants.LEVEL_SIZE_PIXELS,
-                0,
-                u,
-                v,
-                PLAYER_SIZE,
-                PLAYER_SIZE,
-            )
+   
 
 
 class State:
@@ -241,8 +215,35 @@ class State:
         )
 
         # TODO highlight current player
-        for position in self.positions:
-            position.draw()
+        for client_id, position in zip(self.client_ids, self.positions):
+            # TODO more tiles!!!
+            client_tile = hash(client_id) % 4 + 1
+            u, v = (0, client_tile)
+            u *= constants.TILE_SIZE
+            v *= constants.TILE_SIZE
+            pyxel.blt(position.x, position.y, 0, u, v, PLAYER_SIZE, PLAYER_SIZE)
+
+            # Manage overlap
+            if position.x >= constants.LEVEL_SIZE_PIXELS - PLAYER_SIZE:
+                pyxel.blt(
+                    position.x - constants.LEVEL_SIZE_PIXELS,
+                    position.y,
+                    0,
+                    u,
+                    v,
+                    PLAYER_SIZE,
+                    PLAYER_SIZE,
+                )
+            if position.y >= constants.LEVEL_SIZE_PIXELS - PLAYER_SIZE:
+                pyxel.blt(
+                    position.x,
+                    position.y - constants.LEVEL_SIZE_PIXELS,
+                    0,
+                    u,
+                    v,
+                    PLAYER_SIZE,
+                    PLAYER_SIZE,
+                )
 
     def set_inputs(self, client_id: str, inputs: list[int]) -> None:
         """

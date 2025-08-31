@@ -217,7 +217,7 @@ class State:
         # TODO highlight current player
         for client_id, position in zip(self.client_ids, self.positions):
             # TODO more tiles!!!
-            client_tile = hash(client_id) % 4 + 1
+            client_tile = int(client_id, 16) % 4 + 1
             u, v = (0, client_tile)
             u *= constants.TILE_SIZE
             v *= constants.TILE_SIZE

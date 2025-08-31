@@ -15,7 +15,6 @@ DATA_KEY = "data"
 FRAME_KEY = "frame"
 INPUTS_KEY = "inputs"
 STATE_KEY = "state"
-STATES_KEY = "states"
 
 
 def create_server_socket(host: str, port: int) -> socket.socket:

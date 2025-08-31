@@ -34,7 +34,7 @@ class Server:
     def __init__(self, host: str = "0.0.0.0", port: int = 5260) -> None:
         # TODO move all these dicts to a single data structure
         self.client_addresses: dict[str, t.Any] = {}
-        self.client_states: dict[str, State] = {}
+        self.state: State = State()
         # Each series of inputs is (frame, client_id, inputs)
         # This list should be kept sorted by frame.
         self.client_inputs: dict[str, list[tuple[int, str, list[int]]]] = {}
@@ -73,8 +73,10 @@ class Server:
             if inputs and inputs[0][0] == self.frame:
                 client_inputs = inputs[0][2]
 
-            # Update game state
-            self.client_states[client_id].update(client_inputs)
+            self.state.set_inputs(client_id, client_inputs)
+
+        # Update game state
+        self.state.update()
 
         # Get rid of clients that we haven't seen in a long while
         clients_to_remove = []
@@ -87,22 +89,16 @@ class Server:
             self.client_addresses.pop(client_id)
             self.client_inputs.pop(client_id)
             self.client_last_seen_at.pop(client_id)
-            self.client_states.pop(client_id)
+            self.state.remove_client(client_id)
 
         # Share state with all clients
-        for client_id, client_state in self.client_states.items():
-            states = [client_state.as_json()]
-            states += [
-                other_client_state.as_json()
-                for other_client_id, other_client_state in self.client_states.items()
-                if other_client_id != client_id
-            ]
+        for client_id in self.client_addresses:
             self.send(
                 client_id,
                 communication.COMMAND_STATE,
                 {
                     communication.FRAME_KEY: self.frame,
-                    communication.STATES_KEY: states,
+                    communication.STATE_KEY: self.state.to_json(),
                 },
             )
 
@@ -169,8 +165,8 @@ class Server:
         # Add new client
         self.client_addresses[client_id] = address
         self.client_inputs[client_id] = []
-        self.client_states[client_id] = State()
         self.client_last_seen_at[client_id] = time.time()
+        self.state.add_client(client_id)
 
         print(f"INFO connected new client f{client_id} to {address}")
 

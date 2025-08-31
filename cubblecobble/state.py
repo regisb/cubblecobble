@@ -1,7 +1,16 @@
+import hashlib
 import os
+import typing as t
+
 import pyxel
 
 import constants
+
+LEVELS_TILEMAP = 0
+PLAYER_SIZE: int = constants.PLAYER_SIZE
+TILE_EMPTY = (0, 0)
+TILE_PLAYER = (0, 1)
+TILE_WALL = (1, 0)
 
 
 def initialize(
@@ -30,44 +39,28 @@ class Commands:
     JUMP = 2
 
 
-class State:
-    TILE_EMPTY = (0, 0)
-    TILE_WALL = (1, 0)
-    TILE_PLAYER = (0, 1)
-    LEVELS_TILEMAP = 0
-    PLAYER_SIZE: int = constants.PLAYER_SIZE
+class Position:
 
     def __init__(self) -> None:
-        self.x: int = constants.LEVEL_SIZE_PIXELS // 2 - self.PLAYER_SIZE
-        self.y: int = constants.LEVEL_SIZE_PIXELS // 2 - self.PLAYER_SIZE
+        self.x: int = constants.LEVEL_SIZE_PIXELS // 2 - PLAYER_SIZE
+        self.y: int = constants.LEVEL_SIZE_PIXELS // 2 - PLAYER_SIZE
         self.vx: int = 0
         self.vy: int = 0
 
-    def as_json(self) -> dict[str, int]:
-        """
-        TODO is a dict really the best representation? Why not a list?
-        """
-        return {
-            "x": self.x,
-            "y": self.y,
-            "vx": self.vx,
-            "vy": self.vy,
-        }
-
-    def from_json(self, data: dict[str, int]) -> "State":
-        self.x = data["x"]
-        self.y = data["y"]
-        self.vx = data["vx"]
-        self.vy = data["vy"]
-        return self
-
     @property
     def x2(self) -> int:
-        return self.x + self.PLAYER_SIZE - 1
+        return self.x + PLAYER_SIZE - 1
 
     @property
     def y2(self) -> int:
-        return self.y + self.PLAYER_SIZE - 1
+        return self.y + PLAYER_SIZE - 1
+
+    def to_json(self) -> list[int]:
+        return [self.x, self.y, self.vx, self.vy]
+
+    def from_json(self, data: list[int]) -> "Position":
+        self.x, self.y, self.vx, self.vy = data
+        return self
 
     def update(self, inputs: list[int]) -> None:
         ############# Collect forces
@@ -155,45 +148,6 @@ class State:
         self.x %= constants.LEVEL_SIZE_PIXELS
         self.y %= constants.LEVEL_SIZE_PIXELS
 
-    def draw_level(self) -> None:
-        pyxel.bltm(
-            0,
-            0,
-            self.LEVELS_TILEMAP,
-            0,
-            0,
-            constants.LEVEL_SIZE_PIXELS,
-            constants.LEVEL_SIZE_PIXELS,
-        )
-
-    def draw_player(self) -> None:
-        u, v = self.TILE_PLAYER
-        u *= constants.TILE_SIZE
-        v *= constants.TILE_SIZE
-        pyxel.blt(self.x, self.y, 0, u, v, self.PLAYER_SIZE, self.PLAYER_SIZE)
-
-        # Manage overlap
-        if self.x >= constants.LEVEL_SIZE_PIXELS - self.PLAYER_SIZE:
-            pyxel.blt(
-                self.x - constants.LEVEL_SIZE_PIXELS,
-                self.y,
-                0,
-                u,
-                v,
-                self.PLAYER_SIZE,
-                self.PLAYER_SIZE,
-            )
-        if self.y >= constants.LEVEL_SIZE_PIXELS - self.PLAYER_SIZE:
-            pyxel.blt(
-                self.x,
-                self.y - constants.LEVEL_SIZE_PIXELS,
-                0,
-                u,
-                v,
-                self.PLAYER_SIZE,
-                self.PLAYER_SIZE,
-            )
-
     def is_wall(self, x: int, y: int) -> bool:
         """
         Note that we don't need to bother about trimming arguments to the level size,
@@ -202,8 +156,125 @@ class State:
         x_tile = (x % constants.LEVEL_SIZE_PIXELS) // constants.TILE_SIZE
         y_tile = (y % constants.LEVEL_SIZE_PIXELS) // constants.TILE_SIZE
         # pylint: disable=no-member
-        tile_id = pyxel.tilemaps[self.LEVELS_TILEMAP].pget(x_tile, y_tile)
-        return tile_id == self.TILE_WALL
+        tile_id = pyxel.tilemaps[LEVELS_TILEMAP].pget(x_tile, y_tile)
+        return tile_id == TILE_WALL
+
+    def draw(self) -> None:
+        u, v = TILE_PLAYER
+        u *= constants.TILE_SIZE
+        v *= constants.TILE_SIZE
+        pyxel.blt(self.x, self.y, 0, u, v, PLAYER_SIZE, PLAYER_SIZE)
+
+        # Manage overlap
+        if self.x >= constants.LEVEL_SIZE_PIXELS - PLAYER_SIZE:
+            pyxel.blt(
+                self.x - constants.LEVEL_SIZE_PIXELS,
+                self.y,
+                0,
+                u,
+                v,
+                PLAYER_SIZE,
+                PLAYER_SIZE,
+            )
+        if self.y >= constants.LEVEL_SIZE_PIXELS - PLAYER_SIZE:
+            pyxel.blt(
+                self.x,
+                self.y - constants.LEVEL_SIZE_PIXELS,
+                0,
+                u,
+                v,
+                PLAYER_SIZE,
+                PLAYER_SIZE,
+            )
+
+
+class State:
+
+    def __init__(self) -> None:
+        self.client_ids: list[str] = []  # note that the client IDs are hashed
+        self.inputs: list[list[int]] = []
+        self.positions: list[Position] = []
+
+    def to_json(self) -> dict[str, t.Any]:
+        return {
+            "client_ids": self.client_ids,
+            "inputs": self.inputs,
+            "positions": [position.to_json() for position in self.positions],
+        }
+
+    def from_json(self, data: dict[str, t.Any]) -> "State":
+        self.client_ids = data["client_ids"]
+        self.inputs = data["inputs"]
+        self.positions = [
+            Position().from_json(position) for position in data["positions"]
+        ]
+        return self
+
+    def add_client(self, client_id: str) -> None:
+        encoded: str = encode(client_id)
+        if encoded in self.client_ids:
+            print(f"ERROR player already exists: {client_id}")
+            return
+        self.client_ids.append(encoded)
+        self.inputs.append([])
+        self.positions.append(Position())
+
+    def remove_client(self, client_id: str) -> None:
+        client_index = self.get_client_index(client_id)
+        self.client_ids.pop(client_index)
+        self.inputs.pop(client_index)
+        self.positions.pop(client_index)
+
+    def draw(self) -> None:
+        # Level
+        pyxel.bltm(
+            0,
+            0,
+            LEVELS_TILEMAP,
+            0,
+            0,
+            constants.LEVEL_SIZE_PIXELS,
+            constants.LEVEL_SIZE_PIXELS,
+        )
+
+        # TODO highlight current player
+        for position in self.positions:
+            position.draw()
+
+    def set_inputs(self, client_id: str, inputs: list[int]) -> None:
+        """
+        Assign inputs to a player. If the player does not exist, create it.
+        """
+        client_index = self.get_client_index(client_id)
+        self.inputs[client_index] = inputs
+
+    def get_client_index(self, client_id: str) -> int:
+        """
+        Return -1 if the client was not found
+        """
+        encoded = encode(client_id)
+        for client_index, client_encoded in enumerate(self.client_ids):
+            if encoded == client_encoded:
+                return client_index
+        raise ValueError(f"Client not found: {client_id}. Did you call add_client?")
+
+    def update(self) -> None:
+        # TODO REMOVE me
+        # non_zero_inputs = []
+        # for inputs in self.inputs:
+        #     if inputs:
+        #         non_zero_inputs.append(inputs)
+        # if len(non_zero_inputs) > 1:
+        #     import ipdb; ipdb.set_trace()
+
+        for position, inputs in zip(self.positions, self.inputs):
+            position.update(inputs)
+        # Clear inputs
+        self.inputs = [[] for _ in range(len(self.client_ids))]
+
+
+def encode(value: str) -> str:
+    return hashlib.sha256(value.encode()).hexdigest()
 
 
 def truncate(value: int, bound_min: int, bound_max: int) -> int:

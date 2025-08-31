@@ -31,7 +31,7 @@ class Game:
         pyxel.load(os.path.join(os.path.dirname(__file__), "assets.pyxres"))
 
         # Initialize states
-        self.states: list[State] = [State()]
+        self.state: State = State()
         self.frame = 0
 
         # Store inputs
@@ -46,6 +46,7 @@ class Game:
 
     def run(self) -> None:
         pyxel.run(self.update, self.draw)
+
 
     def update(self) -> None:
         # Handle restart command here
@@ -84,7 +85,8 @@ class Game:
             )
 
             # Apply all actions
-            self.states[0].update(inputs)
+            self.state.set_inputs(self.client_id, inputs)
+            self.state.update()
 
         # We do this after the update, such that server has as much time as possible to
         # respond, but before drawing, such that what we display is as accurate as
@@ -96,9 +98,7 @@ class Game:
 
     def draw(self) -> None:
         if self.client_id:
-            self.states[0].draw_level()
-            for state in self.states:
-                state.draw_player()
+            self.state.draw()
         else:
             pyxel.cls(constants.BLACK)
             host, port = self.socket.getpeername()
@@ -127,6 +127,7 @@ class Game:
         if not client_id:
             raise ValueError(f"Received invalid client ID from server: {client_id}")
         self.client_id = client_id
+        self.state.add_client(self.client_id)
         print(f"INFO received client ID from server: {self.client_id}")
 
     def on_ping(self, data: dict[str, t.Any]) -> None:
@@ -153,15 +154,8 @@ class Game:
             print("WARNING Server is ahead. Did we pause the game?")
             # TODO IMPORTANT we should be doing something about it...
 
-        # Load current player state
-        # We assume that state[0] is ours.
-        self.states = [
-            State().from_json(state) for state in data[communication.STATES_KEY]
-        ]
-        if not self.states:
-            # TODO IMPORTANT the fact that this can happen tell us that we didn't pick the right data structure.
-            # import ipdb; ipdb.set_trace()
-            pass
+        # Load
+        self.state.from_json(data[communication.STATE_KEY])
 
         # Clear inputs that came before the server frame
         while self.inputs and self.inputs[0][0] < server_frame:
@@ -176,10 +170,8 @@ class Game:
                     inputs = past_inputs
                 if past_frame > frame:
                     break
-            self.states[0].update(inputs)
-            for state in self.states[1:]:
-                # Note: we assume that users did not make any input
-                state.update([])
+            self.state.set_inputs(self.client_id, inputs)
+            self.state.update()
 
     def send_command(self, command: str, data: dict[str, t.Any]) -> None:
         """

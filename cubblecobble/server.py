@@ -42,7 +42,7 @@ class Server:
                 )
             else:
                 time.sleep(constants.FRAME_DURATION - time_elapsed)
-            self.frame += 1 # TODO we should sometimes loop over
+            self.frame += 1  # TODO we should sometimes loop over
 
     def process(self, message: dict[str, t.Any], address: str) -> None:
         # Parse command
@@ -76,9 +76,7 @@ class Server:
         """
         Send some JSON-formatted data to an address.
         """
-        communication.send_command(
-            self.socket, command, data, address
-        )
+        communication.send_command(self.socket, command, data, address)
 
     def connect(self, address: str) -> str:
         """

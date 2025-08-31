@@ -45,6 +45,7 @@ class Game:
 
     def update(self) -> None:
         # Handle restart command here
+        # TODO remove me? Only server can decide to restart.
         if pyxel.btnp(pyxel.KEY_R):
             # Restart
             self.state = State()
@@ -63,7 +64,6 @@ class Game:
             return
 
         self.state.update()
-        self.frame += 1
 
     def draw(self) -> None:
         self.state.draw()
@@ -87,16 +87,19 @@ class Game:
 
     def on_ping(self, data: dict[str, t.Any]) -> None:
         rtt = time() - data[communication.TIME_KEY]
-        rtt_frames = rtt/constants.FRAME_DURATION
+        rtt_frames = rtt / constants.FRAME_DURATION
         if rtt_frames > 10:
-            print(f"WARNING RTT: {rtt*1000} ms ({rtt_frames} frames)")
+            # This might be normal: everything is paused when the window is minimized.
+            # So we have to catch up.
+            print(f"INFO RTT: {rtt*1000} ms ({rtt_frames} frames)")
         server_frame = data[communication.FRAME_KEY]
         if server_frame > self.frame:
-            adjusted_frame = server_frame + int(constants.FPS * rtt/2) + 1
+            adjusted_frame = server_frame + int(constants.FPS * rtt / 2) + 1
             print(f"INFO Adjusting client frame from {self.frame} to {adjusted_frame})")
-            # TODO the drift is way too big!
             self.frame = adjusted_frame
-
+        elif server_frame < self.frame - constants.FPS:
+            print(f"WARNING more than 1s delay between client and server frame: {self.frame - server_frame} frames")
+            # TODO we should probably do something in that case, if it presents itself
 
     def send_to_server(self, command: str, data: dict[str, t.Any]) -> None:
         if self.client_id:

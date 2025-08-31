@@ -41,7 +41,7 @@ class Game:
         # Establish connection with server
         # Communicate with server
         self.client_id = ""
-        self.socket = communication.create_client_socket()
+        self.socket = communication.create_client_socket(host="192.168.1.163")
         self.send_command(communication.COMMAND_CONNECT, {})
 
     def run(self) -> None:

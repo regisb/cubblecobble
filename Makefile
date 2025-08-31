@@ -24,7 +24,7 @@ html: package ## Bundle game as html file
 	pyxel app2html build/cubblecobble.pyxapp
 
 executable: package ## Bundle game as executable file
-	pyxel app2exe build/cubblecobble.pyxapp
+	cd build/ && pyxel app2exe cubblecobble.pyxapp
 
 ##### Tests
 

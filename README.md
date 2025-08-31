@@ -1,5 +1,14 @@
 # Cubble Cobble
 
+## Usage
+
+    git clone https://github.com/regisb/cubblecobble
+    cd cubblecobble
+    python -m venv ./.venv
+    source .venv/bin/activate
+    pip install pyxel
+    make play
+
 ## Development
 
 Install requirements:
@@ -10,12 +19,10 @@ Install requirements:
 
 Install development requirements:
 
-    pip install mypy pylint black
+    pip install mypy pylint black pyinstaller
 
 Bundle to executable file:
 
-    # Install requirements
-    pip install pyinstaller
     make executable
 
 Note that the generated file will be executable only on the architecture on which it was built.

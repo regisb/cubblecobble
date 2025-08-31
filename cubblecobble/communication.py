@@ -25,25 +25,20 @@ def create_server_socket(host: str, port: int) -> socket.socket:
     return s
 
 
-def create_client_socket(host: str = "127.0.0.1", port: int = 5260) -> socket.socket:
+def create_client_socket(
+    host: str | None = None, port: int | None = None
+) -> socket.socket:
     """
     Create non-blocking client socket
     """
     s = _create_blocking_udp_socket()
-    host, port = get_server_address()
+    # TODO auto-detect server on LAN
+    if host is None:
+        host = os.environ.get("GAME_SERVER_HOST", "127.0.0.1")
+    if port is None:
+        port = int(os.environ.get("GAME_SERVER_PORT", "5260"))
     s.connect((host, port))
     return s
-
-
-def get_server_address() -> tuple[str, int]:
-    """
-    Find a game server.
-
-    TODO auto-detect server on LAN
-    """
-    host = os.environ.get("GAME_SERVER_HOST", "127.0.0.1")
-    port = os.environ.get("GAME_SERVER_PORT", "5260")
-    return host, int(port)
 
 
 def _create_blocking_udp_socket() -> socket.socket:

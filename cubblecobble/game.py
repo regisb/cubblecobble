@@ -95,9 +95,19 @@ class Game:
         self.frame += 1
 
     def draw(self) -> None:
-        self.states[0].draw_level()
-        for state in self.states:
-            state.draw_player()
+        if self.client_id:
+            self.states[0].draw_level()
+            for state in self.states:
+                state.draw_player()
+        else:
+            pyxel.cls(constants.BLACK)
+            host, port = self.socket.getpeername()
+            pyxel.text(
+                constants.LEVEL_SIZE_PIXELS // 2,
+                constants.LEVEL_SIZE_PIXELS // 2,
+                f"Waiting to connect to {host}:{port}...",
+                constants.WHITE,
+            )
 
     def receive_from_server(self) -> None:
         for message, _address in communication.receive_all(self.socket):
@@ -147,19 +157,19 @@ class Game:
         # Load current player state
         # We assume that state[0] is ours.
         self.states = [
-            State().from_json(state)
-            for state in data[communication.STATES_KEY]
+            State().from_json(state) for state in data[communication.STATES_KEY]
         ]
         if not self.states:
             # TODO IMPORTANT the fact that this can happen tell us that we didn't pick the right data structure.
-            import ipdb; ipdb.set_trace()
+            # import ipdb; ipdb.set_trace()
+            pass
 
         # Clear inputs that came before the server frame
         while self.inputs and self.inputs[0][0] < server_frame:
             self.inputs.pop(0)
 
         # Re-apply all inputs
-        for frame in range(server_frame+1, self.frame+1):
+        for frame in range(server_frame + 1, self.frame + 1):
             inputs = []
             for past_frame, past_inputs in self.inputs:
                 # TODO there is a more efficient way to read this list

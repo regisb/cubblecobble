@@ -153,7 +153,10 @@ class Server:
         """
         Send some JSON-formatted data to an address.
         """
-        communication.send_command(self.socket, command, data, address)
+        try:
+            communication.send_command(self.socket, command, data, address)
+        except BlockingIOError:
+            print(f"WARNING Could not communicate with client: {address}")
 
     def on_connect(self, address: str) -> None:
         """
